@@ -11,7 +11,9 @@ class netVLADlayer(tf.keras.layers.Layer) :
 		self.conv1=nn.Conv2D(num_clusters,1,1,kernel_initializer=weight_init)
 		self.softmax=nn.Softmax()
 		self.C=tf.Variable(initial_value=tf.random.uniform([1,1,1,dim,num_clusters]),shape=[1,1,1,dim,num_clusters])
-		self.vec=nn.Flatten()
+		self.vec1=nn.Flatten()
+		self.conv2=nn.Conv2D(4096,1,1)
+		self.vec2=nn.Flatten()
 
 	def call(self,x) :
 		s=self.conv1(x)
@@ -25,7 +27,11 @@ class netVLADlayer(tf.keras.layers.Layer) :
 
 		if self.postnorm :
 			v=tf.math.l2_normalize(v,axis=-1)
-			v=tf.math.l2_normalize(self.vec(v),axis=-1)
+			v=tf.math.l2_normalize(self.vec1(v),axis=-1)
+
+		#PCA (rather PCA a simple 1 by 1 convolution for dimensionality reduction)
+		v=self.conv2(tf.expand_dims(tf.expand_dims(v,1),1))
+		v=tf.math.l2_normalize(self.vec2(v))
 
 		return v
 
