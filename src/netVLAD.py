@@ -20,5 +20,4 @@ class netVLAD(tf.keras.Model) :
 
 if __name__=='__main__':
 	m=netVLAD()
-	x=np.random.rand([224,224,3])
-	y=m(x)
+  m.summary()
