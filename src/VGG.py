@@ -30,4 +30,5 @@ class VGG(tf.keras.Model) :
 
 if __name__=='__main__':
 	vgg=VGG()
+	vgg.build((None,224,224,3))
 	vgg.summary()
