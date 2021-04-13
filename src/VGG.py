@@ -1,6 +1,6 @@
 import tensorflow as tf
 import tensorflow.keras.layers as nn
-import numpy
+import numpy as np
 import cv2
 
 from ConvBlock import *

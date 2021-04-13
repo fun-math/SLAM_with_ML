@@ -1,6 +1,6 @@
 import tensorflow as tf
 import tensorflow.keras.layers as nn
-import numpy
+import numpy as np
 import cv2
 
 class netVLADlayer(tf.keras.layers.Layer) :
@@ -12,7 +12,7 @@ class netVLADlayer(tf.keras.layers.Layer) :
 
 		self.conv1=nn.Conv2D(num_clusters,1,1,kernel_initializer=weight_init)
 		self.softmax=nn.Softmax()
-		self.C=tf.Variable(initial_value=None,shape=[1,1,1,dim,num_clusters])
+		self.C=tf.Variable(initial_value=tf.random.uniform([1,1,1,dim,num_clusters]),shape=[1,1,1,dim,num_clusters])
 		self.vec=nn.Flatten()
 
 	def call(self,x) :
