@@ -10,7 +10,7 @@ class ConvBlock(tf.keras.layers.Layer) :
 		self.channels=channels
 		self.logits=logits
 		self.convs=[]
-		for i in range(self.channels-1) :
+		for i in range(self.layers-1) :
 			self.convs+=[nn.Conv2D(self.channels,3,1,padding='same',activation='relu')]
 		self.convs+=[nn.Conv2D(self.channels,3,1,padding='same')]
 		# if in_shape!=None :
@@ -20,9 +20,15 @@ class ConvBlock(tf.keras.layers.Layer) :
 			self.relu=nn.ReLU()
 
 	def call(self,x) :
-		for i in range(self.channels) :
+		for i in range(self.layers) :
 			x=self.convs[i](x)
 		x=self.pool(x)
 		if not self.logits :
 			x=self.relu(x)
 		return x
+
+if __name__=='__main__' :
+	c=ConvBlock(3,64)
+	x=tf.random.normal(shape=(1,224,224,3))
+	y=c(x)
+	print(y)

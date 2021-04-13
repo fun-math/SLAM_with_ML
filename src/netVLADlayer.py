@@ -4,10 +4,8 @@ import numpy as np
 import cv2
 
 class netVLADlayer(tf.keras.layers.Layer) :
-	def __init__(self,num_clusters=64,dim=128,weight_init='glorot_uniform',cluster_initializer=None,postnorm=True) :
+	def __init__(self,num_clusters=64,dim=512,weight_init='glorot_uniform',cluster_initializer=None,postnorm=True) :
 		super(netVLADlayer,self).__init__()
-		# self.num_clusters=num_clusters
-		# self.cluster_initializer=cl
 		self.postnorm=postnorm
 
 		self.conv1=nn.Conv2D(num_clusters,1,1,kernel_initializer=weight_init)
@@ -16,9 +14,8 @@ class netVLADlayer(tf.keras.layers.Layer) :
 		self.vec=nn.Flatten()
 
 	def call(self,x) :
-		x=self.conv1(x)
-
-		s=self.softmax(x)
+		s=self.conv1(x)
+		s=self.softmax(s)
 		a=tf.expand_dims(s,-2)
 
 		v=tf.expand_dims(x,-1)+self.C
@@ -31,3 +28,9 @@ class netVLADlayer(tf.keras.layers.Layer) :
 			v=tf.math.l2_normalize(self.vec(v),axis=-1)
 
 		return v
+
+if __name__=='__main__':
+	vlad=netVLADlayer(dim=512)
+	x=tf.random.normal(shape=(1,7,7,512))
+	y=vlad(x)
+	print(y.shape)
