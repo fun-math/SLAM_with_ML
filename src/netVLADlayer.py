@@ -32,7 +32,7 @@ class netVLADlayer(tf.keras.layers.Layer) :
 		#PCA (rather PCA a simple 1 by 1 convolution for dimensionality reduction)
 		v=self.conv2(tf.expand_dims(tf.expand_dims(v,1),1))
 		v=tf.math.l2_normalize(self.vec2(v))
-
+        
 		return v
 
 if __name__=='__main__':
