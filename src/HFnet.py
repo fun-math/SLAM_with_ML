@@ -4,6 +4,8 @@ import numpy as np
 import cv2
 
 from tf.keras.applications import MobileNetV2
+from detector import Detector
+from descriptor import Descriptor
 #import netvlad and superpoint
 
 class HFnet(tf.keras.Model) :
@@ -15,8 +17,8 @@ class HFnet(tf.keras.Model) :
 		self.backbone=MobileNetV2(input_shape=self.input_shape,alpha=self.alpha,
 						include_top=False,weights='imagenet')
 		self.hidden=backbone.get_layer()#pass layer name
-		self.detector_head=None #detector head
-		self.descriptor_head=None #descriptor head
+		self.detector_head=Detector() #detector head
+		self.descriptor_head=Descriptor() #descriptor head
 		self.netvladlayer=None #netvladlayer
 
 	def call(self,x) :
