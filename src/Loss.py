@@ -18,9 +18,9 @@ class Loss(tf.keras.losses.Loss) :
 		loss_ldet=tf.math.reduce_mean(
 					tf.keras.losses.categorical_crossentropy(y_true[2],y_pred[2]))
 
-		loss=coeffs[0]*loss_gdesc+coeffs[1]*loss_ldesc+coeffs[2]*loss_ldet+tf.math.reduce_sum(loss_multipliers)
+		loss=coeffs[0]*loss_gdesc+coeffs[1]*loss_ldesc+2*coeffs[2]*loss_ldet+tf.math.reduce_sum(loss_multipliers)
 		return loss
-		
+
 
 if __name__=='__main__' :
 	loss=Loss()
