@@ -20,8 +20,9 @@ class HFnet(tf.keras.Model) :
         self.alpha=alpha
         self.block_size=8
         self.backbone=MobileNetV2(input_shape=in_shape,alpha=self.alpha, include_top=False,weights='imagenet')
+        # self.backbone.summary()
 
-        # self.hidden=self.backbone.get_layer('block_6_project_BN').output#pass layer name
+        # self.hidden=self.backbone.get_layer('block_6_project').output#pass layer name
         self.detector_head=Detector() #detector head
         self.descriptor_head=Descriptor() #descriptor head
         self.netvladlayer=netVLADlayer(dim = 1280) #netvladlayer
@@ -38,8 +39,8 @@ class HFnet(tf.keras.Model) :
  
         global_descriptor=self.netvladlayer(x)
         
-        local_descriptor=self.descriptor_head(x)#self.hidden)
-        key_points=self.detector_head(x)#self.hidden)
+        local_descriptor=self.descriptor_head(self.hidden)
+        key_points=self.detector_head(self.hidden)
 
         #if training :
         return [global_descriptor,local_descriptor,key_points]#,self.loss_multipliers
@@ -80,8 +81,8 @@ model = HFnet(in_shape = (45, 45, 3))
 
 x = tf.random.normal((2, 45,45,3))
 x1=tf.random.normal(shape=(2,4096))
-x2=tf.random.normal(shape=(2,2,2,256))
-x3=tf.random.normal(shape=(2,2, 2, 65))
+x2=tf.random.normal(shape=(2,3,3,256))
+x3=tf.random.normal(shape=(2,3, 3, 65))
 # x4 = tf.random.normal(shape = (2, 3, 1))
 y = [x1, x2, x3]
 
