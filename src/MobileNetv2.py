@@ -9,6 +9,9 @@ import tensorflow.keras.utils as keras_utils
 BASE_WEIGHT_PATH = ('https://github.com/JonathanCMitchell/mobilenet_v2_keras/'
                     'releases/download/v1.1/')
 
+
+__all__=["_obtain_input_shape",'_make_divisible','correct_pad','_inverted_res_block','norm','MobileNetV2']
+
 def MobileNetV2(input_shape=None,
                 alpha=1.0,
                 include_top=True,
@@ -18,7 +21,8 @@ def MobileNetV2(input_shape=None,
                 classes=1000,
                 begin=False,
                 end=False,
-                mid=7,
+                start_block=0,
+                finish_block=16,
                 **kwargs):
     """Instantiates the MobileNetV2 architecture.
     # Arguments
@@ -162,15 +166,29 @@ def MobileNetV2(input_shape=None,
                                       weights=weights)
 
     if end :
-        factor=8
-        if 7<=mid<=12 :
+        factor=2
+        if 2<=start_block<=3 :
+            factor=4
+        elif 4<=start_block<=6 :
+            factor=8
+        elif 7<=start_block<=13 :
             factor=16
+        elif 14<=start_block<=16 :
+            factor=32
     
-        channels=32
-        if 7<=mid<=10 :
+        channels=3
+        if start_block==1 :
+            channels=16
+        elif 2<=start_block<=3 :
+            channels=24
+        elif 4<=start_block<=6 :
+            channels=32
+        elif 7<=start_block<=10 :
             channels=64
-        elif 11<=mid<=13 :
+        elif 11<=start_block<=13 :
             channels=96
+        elif 14<=mid<=16 :
+            channels=160
 
         input_shape=(input_shape[0]//factor,input_shape[1]//factor,int(channels*alpha))
 
@@ -221,60 +239,59 @@ def MobileNetV2(input_shape=None,
 	                                  name='bn_Conv1')(x)
 	    x = layers.ReLU(6., name='Conv1_relu')(x)
 
-    if (0-mid-1)*end + (mid-0)*begin >= 0 :
-        print('good----------------')
+    if start_block<=0<=finish_block :
         x = _inverted_res_block(x, filters=16, alpha=alpha, stride=1,
                                 expansion=1, block_id=0)
 
-    if (1-mid-1)*end + (mid-1)*begin >= 0 :
+    if start_block<=1<=finish_block :
         x = _inverted_res_block(x, filters=24, alpha=alpha, stride=2,
 	                            expansion=6, block_id=1)	
-    if (2-mid-1)*end + (mid-2)*begin >= 0 :
+    if start_block<=2<=finish_block :
 	    x = _inverted_res_block(x, filters=24, alpha=alpha, stride=1,
 	                            expansion=6, block_id=2)
 
-    if (3-mid-1)*end + (mid-3)*begin >= 0 :
+    if start_block<=3<=finish_block :
 	    x = _inverted_res_block(x, filters=32, alpha=alpha, stride=2,
 	                            expansion=6, block_id=3)
-    if (4-mid-1)*end + (mid-4)*begin >= 0 :
+    if start_block<=4<=finish_block :
 	    x = _inverted_res_block(x, filters=32, alpha=alpha, stride=1,
 	                            expansion=6, block_id=4)
-    if (5-mid-1)*end + (mid-5)*begin >= 0 :
+    if start_block<=5<=finish_block :
 	    x = _inverted_res_block(x, filters=32, alpha=alpha, stride=1,
 	                            expansion=6, block_id=5)
-    if (6-mid-1)*end + (mid-6)*begin >= 0 :
+    if start_block<=6<=finish_block :
         x = _inverted_res_block(x, filters=64, alpha=alpha, stride=2,
                                 expansion=6, block_id=6)
-    if (7-mid-1)*end + (mid-7)*begin >= 0 :
+    if start_block<=7<=finish_block :
         x = _inverted_res_block(x, filters=64, alpha=alpha, stride=1,expansion=6, block_id=7)
-    if (8-mid-1)*end + (mid-8)*begin >= 0 :
+    if start_block<=8<=finish_block :
 	    x = _inverted_res_block(x, filters=64, alpha=alpha, stride=1,
 	                            expansion=6, block_id=8)
-    if (9-mid-1)*end + (mid-9)*begin >= 0 :
+    if start_block<=9<=finish_block :
 	    x = _inverted_res_block(x, filters=64, alpha=alpha, stride=1,
 	                            expansion=6, block_id=9)
 
-    if (10-mid-1)*end + (mid-10)*begin >= 0 :
+    if start_block<=10<=finish_block :
 	    x = _inverted_res_block(x, filters=96, alpha=alpha, stride=1,
 	                            expansion=6, block_id=10)
-    if (11-mid-1)*end + (mid-11)*begin >= 0 :
+    if start_block<=11<=finish_block :
 	    x = _inverted_res_block(x, filters=96, alpha=alpha, stride=1,
 	                            expansion=6, block_id=11)
-    if (12-mid-1)*end + (mid-12)*begin >= 0 :
+    if start_block<=12<=finish_block :
 	    x = _inverted_res_block(x, filters=96, alpha=alpha, stride=1,
 	                            expansion=6, block_id=12)
 
-    if (13-mid-1)*end + (mid-13)*begin >= 0 :
+    if start_block<=13<=finish_block :
 	    x = _inverted_res_block(x, filters=160, alpha=alpha, stride=2,
 	                            expansion=6, block_id=13)
-    if (14-mid-1)*end + (mid-14)*begin >= 0 :
+    if start_block<=14<=finish_block :
 	    x = _inverted_res_block(x, filters=160, alpha=alpha, stride=1,
 	                            expansion=6, block_id=14)
-    if (15-mid-1)*end + (mid-15)*begin >= 0 :
+    if start_block<=15<=finish_block :
 	    x = _inverted_res_block(x, filters=160, alpha=alpha, stride=1,
 	                            expansion=6, block_id=15)
 
-    if (16-mid-1)*end + (mid-16)*begin >= 0 :
+    if start_block<=16<=finish_block :
 	    x = _inverted_res_block(x, filters=320, alpha=alpha, stride=1,
 	                            expansion=6, block_id=16)
 
@@ -339,8 +356,8 @@ def MobileNetV2(input_shape=None,
                 model_name, weight_path, cache_subdir='models')
         model.load_weights(weights_path)
     elif weights is not None:
-        model.load_weights(weights)
-        print('loading weights from',weights)
+        model.load_weights(weights,by_name=True)
+        # print('loading weights from',weights)
 
     return model
 
@@ -551,19 +568,26 @@ def norm(x) :
     return(tf.math.reduce_mean(tf.math.square(x)))
 
 if __name__=='__main__' :
-    # base=MobileNetV2(input_shape=(224,224,3),include_top=False,alpha=0.75,#weights=None,
-    #     weights='../weights/mobilenet_v2_weights_tf_dim_ordering_tf_kernels_0.75_224_no_top.h5',
-    #     begin=True)
-    # netvlad_encoder=MobileNetV2(input_shape=(224,224,3),include_top=False,alpha=0.75,#weights=None,
-    #     weights='../weights/mobilenet_v2_weights_tf_dim_ordering_tf_kernels_0.75_224_no_top.h5',
-    #     end=True)
+    base=MobileNetV2(input_shape=(224,224,3),include_top=False,alpha=0.75,#weights=None,
+        weights='../weights/custom_mobilenet_v2_0.75_224_no_top.h5',
+        # weights='../weights/mobilenet_v2_weights_tf_dim_ordering_tf_kernels_0.75_224_no_top.h5',
+        begin=True,start_block=0,finish_block=7)
+    netvlad_encoder=MobileNetV2(input_shape=(224,224,3),include_top=False,alpha=0.75,#weights=None,
+        weights='../weights/custom_mobilenet_v2_0.75_224_no_top.h5',
+        # weights='../weights/mobilenet_v2_weights_tf_dim_ordering_tf_kernels_0.75_224_no_top.h5',
+        end=True,start_block=8,finish_block=16)
     full_model=MobileNetV2(input_shape=(224,224,3),include_top=False,alpha=0.75,
-        weights='../weights/mobilenet_v2_weights_tf_dim_ordering_tf_kernels_0.75_224_no_top.h5')
+        weights='imagenet',
+        # weights='../weights/custom_mobilenet_v2_0.75_224_no_top.h5',
+        # weights='../weights/mobilenet_v2_weights_tf_dim_ordering_tf_kernels_0.75_224_no_top.h5'
+        )
     x=tf.random.normal(shape=(1,224,224,3))
-    x2=tf.random.normal(shape=(1,14,14,48))
+    # x2=tf.random.normal(shape=(1,14,14,48))
     y1=full_model(x)
-    # enc=base(x)
-    # y2=netvlad_encoder(enc)
-    print(norm(y1))#,norm(enc),norm(y1))
+    enc=base(x)
+    y2=netvlad_encoder(enc)
+    print(norm(y1-y2)/norm(y2),norm(enc),norm(y1),norm(y2))
+    # full_model.save_weights('../weights/custom_mobilenet_v2_0.75_224_no_top.h5')
     # print(model(x).shape)
-    # base.summary()
+    base.summary()
+    netvlad_encoder.summary()

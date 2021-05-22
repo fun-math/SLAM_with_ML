@@ -6,21 +6,28 @@ import cv2
 print(tf.executing_eagerly())
 
 from netVLADlayer import netVLADlayer
-from tensorflow.keras.applications import MobileNetV2
+# from tensorflow.keras.applications import MobileNetV2
 from detector import Detector
 from descriptor import Descriptor
 from Loss import *
+from MobileNetv2 import *
 #import netvlad and superpoint
 
 class HFnet(tf.keras.Model) :
-    def __init__(self, in_shape=(640,480,3),alpha=0.75) :
+    def __init__(self, in_shape=(640,480,3),alpha=0.75,mid=7) :
         super(HFnet,self).__init__()
 
         #self.input_shape=input_shape
         self.alpha=alpha
         self.block_size=8
-        self.backbone=MobileNetV2(input_shape=in_shape,alpha=self.alpha, include_top=False,weights='imagenet')
-        # self.backbone.summary()
+        self.base=MobileNetV2(input_shape=in_shape,include_top=False,alpha=0.75,#weights=None,
+                weights='../weights/custom_mobilenet_v2_0.75_224_no_top.h5',
+                # weights='../weights/mobilenet_v2_weights_tf_dim_ordering_tf_kernels_0.75_224_no_top.h5',
+                begin=True,start_block=0,finish_block=mid)
+        self.netvlad_encoder=MobileNetV2(input_shape=in_shape,include_top=False,alpha=0.75,#weights=None,
+                weights='../weights/custom_mobilenet_v2_0.75_224_no_top.h5',
+                # weights='../weights/mobilenet_v2_weights_tf_dim_ordering_tf_kernels_0.75_224_no_top.h5',
+                end=True,start_block=mid+1,finish_block=16)
 
         # self.hidden=self.backbone.get_layer('block_6_project').output#pass layer name
         self.detector_head=Detector() #detector head
@@ -34,13 +41,13 @@ class HFnet(tf.keras.Model) :
 
 
     def call(self,x,training=None) :
-        x=self.backbone(x)
+        x=self.base(x)
         # print(x.shape)
  
-        global_descriptor=self.netvladlayer(x)
+        global_descriptor=self.netvladlayer(self.netvlad_encoder(x))
         
-        local_descriptor=self.descriptor_head(self.hidden)
-        key_points=self.detector_head(self.hidden)
+        local_descriptor=self.descriptor_head(x)
+        key_points=self.detector_head(x)
 
         #if training :
         return [global_descriptor,local_descriptor,key_points]#,self.loss_multipliers
@@ -77,12 +84,12 @@ class HFnet(tf.keras.Model) :
       
 '''
 
-model = HFnet(in_shape = (45, 45, 3))
+model = HFnet(in_shape = (640, 480, 3),mid=7)
 
-x = tf.random.normal((2, 45,45,3))
+x = tf.random.normal((2, 640,480,3))
 x1=tf.random.normal(shape=(2,4096))
-x2=tf.random.normal(shape=(2,3,3,256))
-x3=tf.random.normal(shape=(2,3, 3, 65))
+x2=tf.random.normal(shape=(2,40,30,256))
+x3=tf.random.normal(shape=(2,40, 30, 65))
 # x4 = tf.random.normal(shape = (2, 3, 1))
 y = [x1, x2, x3]
 
@@ -97,6 +104,6 @@ y = [x1, x2, x3]
 model.compile(optimizer = "RMSprop", 
 	loss = [Loss_desc('gdesc'),Loss_desc('ldesc'),Loss_ldet()])
 
-# model.train_step((x, y))
+# # model.train_step((x, y))
 model.fit(x, y, epochs = 1, batch_size = 2)
 
