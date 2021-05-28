@@ -27,7 +27,13 @@ class HFnet(tf.keras.Model) :
         self.detector_head=Detector() #detector head
         self.descriptor_head=Descriptor() #descriptor head
         self.netvladlayer=netVLADlayer(dim = 1280) #netvladlayer
-        self.step=0
+        
+
+        self.step=0#None
+        self.train_ds=None
+        self.valid_ds=None
+
+
 
 
     def call(self,x,training=None) :
@@ -38,14 +44,18 @@ class HFnet(tf.keras.Model) :
         local_descriptor=self.descriptor_head(x)
         key_points=self.detector_head(x)
 
-        if training :
-            return [global_descriptor,local_descriptor,key_points]
+        # if training :
+        return [global_descriptor,local_descriptor,key_points]
 
         #throw away the dustbin and return probabilistic scores
-        key_points_map=tf.nn.depth_to_space(key_points[:,:,:,:-1],self.block_size)
-        return [global_descriptor,local_descriptor,key_points_map]
+        # key_points_map=tf.nn.depth_to_space(key_points[:,:,:,:-1],self.block_size)
+        # return [global_descriptor,local_descriptor,key_points_map]
 
     
+    def assign_data(self,train_ds=None,valid_ds=None) :
+        self.train_ds=train_ds
+        self.valid_ds=valid_ds
+
     def train_step(self, data):
         x, y = data
 
@@ -56,17 +66,46 @@ class HFnet(tf.keras.Model) :
         gradients = tape.gradient(train_loss, self.trainable_variables)
     
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
-
-        if self.step%100==0:
-            y_val_pred = self(x_val, training = False)
-            val_loss =self.compiled_loss(y_val, y_val_pred)
-        print(val_loss)
+        # self.compiled_metrics.update_state(y, y_pred)
+        # if self.step%100==0:
+        #     for x_batch_val, y_batch_val in val_dataset:
+        #         y_batch_val_pred = self(x_batch_val, training = False)
+        #         val_loss =self.compiled_loss(y_val, y_val_pred)
+        # print(val_loss)
 
         if self.step == 60000:
             optimizer.learning_rate.assign(0.0001)
         if self.step==80000:
             optimizer.learning_rate.assign(0.00001)
         self.step = self.step + 1
+        # print(train_loss.numpy())
+        return train_loss
+        # tf.print(train_loss)
+        # print(self.metrics[0].result())
+        # for m in self.metrics :
+        #     tf.print(m.result()) 
+        # return {m.name: m.result() for m in self.metrics}
+        
+    def test_step(x,y) : 
+        x, y = data
+        y_pred=self(x)
+        self.compiled_metrics.update_state(y,y_pred)
+
+    def custom_fit(steps) :
+        epochs=np.ceil(steps/self.train_ds.__len__())
+        self.steps=0
+
+        for epoch in range(epochs) :
+            for x_batch_train, y_batch_train in self.train_ds :
+                loss=self.train_step((x_batch_train, y_batch_train))
+                print(step,loss)
+
+        if self.step % 200 == 0 :
+            for m in self.metrics :
+                m.reset_states()
+            for x_batch_val, y_batch_val in self.valid_ds :
+                self.test_step((x_batch_val, y_batch_val))
+            print('*******************',self.metrics[0].result())
 
     def build_graph(self) :
         x=tf.keras.Input(shape=self.in_shape)
@@ -75,14 +114,14 @@ class HFnet(tf.keras.Model) :
 
 if __name__=='__main__' :
 
-    model = HFnet(in_shape = (640, 480, 3),mid=7)
-    model.build((None,640,480,3))
+    model = HFnet(in_shape = (160, 160, 3),mid=7)
+    model.build((None,160,160,3))
     # tf.keras.utils.plot_model(model.build_graph(),to_file='HFnet.png',expand_nested=True)
 
-    x = tf.random.normal((2, 640,480,3))
+    x = tf.random.normal((2, 160,160,3))
     x1=tf.random.normal(shape=(2,4096))
-    x2=tf.random.normal(shape=(2,40,30,256))
-    x3=tf.random.normal(shape=(2,40, 30, 65))
+    x2=tf.random.normal(shape=(2,10,10,256))
+    x3=tf.random.normal(shape=(2,10, 10, 65))
     # x4 = tf.random.normal(shape = (2, 3, 1))
     y = [x1, x2, x3]
 
