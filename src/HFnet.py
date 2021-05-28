@@ -11,7 +11,7 @@ from Loss import *
 from MobileNetv2 import *
 
 class HFnet(tf.keras.Model) :
-    def __init__(self, in_shape=(640,480,3),alpha=0.75,mid=7) :
+    def __init__(self, in_shape=(640,480,3),alpha=0.75,mid=7,weights_dir=None) :
         super(HFnet,self).__init__()
 
         self.in_shape=in_shape
@@ -29,7 +29,9 @@ class HFnet(tf.keras.Model) :
         self.netvladlayer=netVLADlayer(dim = 1280) #netvladlayer
         
 
+        self.weights_dir=weights_dir
         self.step=0#None
+        self.valid_freq=None
         self.train_ds=None
         self.valid_ds=None
 
@@ -86,26 +88,31 @@ class HFnet(tf.keras.Model) :
         #     tf.print(m.result()) 
         # return {m.name: m.result() for m in self.metrics}
         
-    def test_step(x,y) : 
+    def test_step(self,data) : 
         x, y = data
         y_pred=self(x)
         self.compiled_metrics.update_state(y,y_pred)
 
-    def custom_fit(steps) :
+    def custom_fit(self,steps,valid_freq=100) :
         epochs=np.ceil(steps/self.train_ds.__len__())
-        self.steps=0
+        self.valid_freq=valid_freq
+        self.step=0
 
-        for epoch in range(epochs) :
+        for epoch in range(int(epochs)) :
             for x_batch_train, y_batch_train in self.train_ds :
                 loss=self.train_step((x_batch_train, y_batch_train))
-                print(step,loss)
+                print('step = ',self.step,', loss = ',loss)
 
-        if self.step % 200 == 0 :
-            for m in self.metrics :
-                m.reset_states()
-            for x_batch_val, y_batch_val in self.valid_ds :
-                self.test_step((x_batch_val, y_batch_val))
-            print('*******************',self.metrics[0].result())
+                if self.step % self.valid_freq == 0 :
+                    for x_batch_val, y_batch_val in self.valid_ds :
+                        self.test_step((x_batch_val, y_batch_val))
+                    print('**********Validation*********\nloss = ',self.metrics[0].result(),
+                        '\n*****************************')
+                    for m in self.metrics :
+                        m.reset_states()
+
+                    # self.save_weights(self.weights_dir+'hfnet_last.h5')
+
 
     def build_graph(self) :
         x=tf.keras.Input(shape=self.in_shape)

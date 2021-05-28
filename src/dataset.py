@@ -20,7 +20,8 @@ class Dataset(tf.keras.utils.Sequence) :
 			for full_name in glob.glob(pre_path+'images/'+post_path+split+'*')]
 
 	def __len__(self) :
-		return np.ceil(len(self.names)/self.batch_size)
+		return 4
+		# return np.ceil(len(self.names)/self.batch_size)
 
 	def _imread(self,path) :
 		img=cv2.imread(path)
@@ -28,15 +29,20 @@ class Dataset(tf.keras.utils.Sequence) :
 		return img
 
 	def __getitem__(self,idx) :
-		batch_names=self.names[idx*self.batch_size : (idx+1)*self.batch_size]
+		# batch_names=self.names[idx*self.batch_size : (idx+1)*self.batch_size]
 
-		batch_x=np.array([self._imread(f'{self.pre_path}images/{self.post_path}{self.split}{name}')
-				for name in batch_names])
-		batch_y=[np.array([self._imread(f'{self.pre_path}labels/{self.post_path}{self.split}{label_type}{name}')
-					for name in batch_names])
-						for label_type in self.label_types]
+		# batch_x=np.array([self._imread(f'{self.pre_path}images/{self.post_path}{self.split}{name}')
+		# 		for name in batch_names])
+		# batch_y=[np.array([self._imread(f'{self.pre_path}labels/{self.post_path}{self.split}{label_type}{name}')
+		# 			for name in batch_names])
+		# 				for label_type in self.label_types]
 
-		return (batch_x,batch_y)
+		x = tf.random.normal((1,160,160,3))
+		x1=tf.random.normal(shape=(1,4096))
+		x2=tf.random.normal(shape=(1,10,10,256))
+		x3=tf.random.normal(shape=(1,10, 10, 65))
+		return (x,[x1,x2,x3])
+		# return (batch_x,batch_y)
 		
 
 if __name__=='__main__' :
