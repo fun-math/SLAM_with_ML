@@ -4,7 +4,7 @@ import cv2
 import glob
 
 #/media/ironwolf/students/amit/datasets/bdd100k/images/100k/train/
-#/media/ironwolf/students/amit/datasets/bdd100k/labels/100k/train/<label_type>
+#/media/ironwolf/students/amit/datasets/bdd100k/labels/100k/<label_type>/train/
 # <label_type> is one of ['gdesc/','ldesc/','ldet/']
 
 class Dataset(tf.keras.utils.Sequence) :
@@ -34,9 +34,9 @@ class Dataset(tf.keras.utils.Sequence) :
 	def __getitem__(self,idx) :
 		batch_names=self.names[idx*self.batch_size : (idx+1)*self.batch_size]
 
-		batch_x=np.array([self._imread(f'{self.pre_path}images/{self.post_path}{self.split}{name}')
+		batch_x=np.array([self._imread('{}images/{}{}{}'.format(self.pre_path,self.post_path,self.split,name))
 				for name in batch_names])
-		batch_y=[np.array([self._imread(f'{self.pre_path}labels/{self.post_path}{self.split}{label_type}{name}')
+		batch_y=[np.array([self._imread('{}labels/{}{}{}{}'.format(self.pre_path,self.post_path,label_type,self.split,name))
 					for name in batch_names])
 						for label_type in self.label_types]
 		
@@ -63,4 +63,5 @@ class Dataset(tf.keras.utils.Sequence) :
 if __name__=='__main__' :
 	data=Dataset()
 	print(data.__len__())
+	data.__getitem__(0)
 	#To be tested after generating labels successfully
