@@ -19,9 +19,9 @@ class Detector(tf.keras.layers.Layer) :
 
 
 	def Softmax(self,x) :
-		m = np.max(x, axis = self.axis, keepdims = True)
-		lse = m + np.log(np.sum(np.exp(x - m), axis = self.axis, keepdims = True))
-		soft = np.exp(x - lse)
+		m = tf.math.reduce_max(x, axis = self.axis, keepdims = True)
+		lse = m + tf.math.log(tf.math.reduce_sum(tf.math.exp(x - m), axis = self.axis, keepdims = True))
+		soft = tf.math.exp(x - lse)
 
 		return soft
     

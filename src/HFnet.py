@@ -11,7 +11,7 @@ from Loss import *
 from MobileNetv2 import *
 
 class HFnet(tf.keras.Model) :
-    def __init__(self, in_shape=(640,480,3),alpha=0.75,mid=7,weights_dir=None) :
+    def __init__(self, in_shape=(480,640,3),alpha=0.75,mid=7,weights_dir=None) :
         super(HFnet,self).__init__()
 
         self.in_shape=in_shape
