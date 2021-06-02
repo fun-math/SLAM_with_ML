@@ -11,7 +11,7 @@ from Loss import *
 from MobileNetv2 import *
 
 class HFnet(tf.keras.Model) :
-    def __init__(self, in_shape=(480,640,3),alpha=0.75,mid=7,weights_dir=None) :
+    def __init__(self, in_shape=(480,640,3),alpha=0.75,mid=5,weights_dir=None) :
         super(HFnet,self).__init__()
 
         self.in_shape=in_shape
@@ -34,6 +34,8 @@ class HFnet(tf.keras.Model) :
         self.valid_freq=None
         self.train_ds=None
         self.valid_ds=None
+        self._losses=None
+        self.optimizer=tf.keras.optimizers.RMSprop()
 
 
 
@@ -58,12 +60,19 @@ class HFnet(tf.keras.Model) :
         self.train_ds=train_ds
         self.valid_ds=valid_ds
 
+    def assign_loss(self,_losses) :
+        ''' _losses=[loss1,loss2,loss3]'''
+        self._losses=_losses
+
+    def calculate_loss(self,y,y_pred) :
+        return sum([self._losses[i](y[i],y_pred[i]) for i in range(3)])
+
     def train_step(self, data):
         x, y = data
 
         with tf.GradientTape() as tape:
             y_pred = self(x, training = True)
-            train_loss = self.compiled_loss(y, y_pred)
+            train_loss = self.calculate_loss(y, y_pred)
 
         gradients = tape.gradient(train_loss, self.trainable_variables)
     

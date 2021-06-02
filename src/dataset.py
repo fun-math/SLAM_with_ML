@@ -48,15 +48,16 @@ class Dataset(tf.keras.utils.Sequence) :
 
 		x1=tf.random.normal(shape=(1,4096))
 		batch_y = [x1,batch_y[0], batch_y[1]]
+		# print(batch_y[1].shape)
 		
 		for i in range(3) :
-			if batch_y[i].shape[0]==1 :
-				batch_y[i]=batch_y[i][0]
+			if batch_y[i].shape[1]==1 :
+				batch_y[i]=np.squeeze(batch_y[i],axis=1)
 
 		channels=[256,65]#[desc,det]
 		for i in range(1,3) :
-			if batch_y[i].shape[0]==channels[i-1] :
-				batch_y[i]=np.rollaxis(batch_y[i], 2)
+			if batch_y[i].shape[1]==channels[i-1] :
+				batch_y[i]=np.moveaxis(batch_y[i], 1,3)
 
 		# correct output
 		#return (batch_x,batch_y)
