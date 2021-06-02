@@ -100,25 +100,30 @@ class HFnet(tf.keras.Model) :
     def test_step(self,data) : 
         x, y = data
         y_pred=self(x)
-        self.compiled_metrics.update_state(y,y_pred)
+        #self.compiled_metrics.update_state(y,y_pred)
+        loss = self.calculate_loss(y, y_pred)
+        return loss
 
-    def custom_fit(self,steps,valid_freq=100) :
+    def custom_fit(self,steps = 85000,valid_freq=100) :
         epochs=np.ceil(steps/self.train_ds.__len__())
         self.valid_freq=valid_freq
         self.step=0
 
         for epoch in range(int(epochs)) :
+            mean_loss = 0
             for x_batch_train, y_batch_train in self.train_ds :
                 loss=self.train_step((x_batch_train, y_batch_train))
-                print('step = ',self.step,', loss = ',loss)
+                loss_numpy = loss.data.cpu().numpy()
+                print('step = ',self.step,', loss = ',loss_numpy)
 
                 if self.step % self.valid_freq == 0 :
                     for x_batch_val, y_batch_val in self.valid_ds :
-                        self.test_step((x_batch_val, y_batch_val))
-                    print('**********Validation*********\nloss = ',self.metrics[0].result(),
+                        val_loss  = self.test_step((x_batch_val, y_batch_val))
+                        val_loss_numpy = val_loss.data.cpu().numpy()
+                    print('**********Validation*********\nloss = ',val_loss_numpy,
                         '\n*****************************')
-                    for m in self.metrics :
-                        m.reset_states()
+                    #for m in self.metrics :
+                        #m.reset_states()
 
                     # self.save_weights(self.weights_dir+'hfnet_last.h5')
 
