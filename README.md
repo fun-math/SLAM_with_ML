@@ -6,4 +6,5 @@ Run this to download weights and keep it in the weights folder
 
 ## Weights
 
--[Mobilenet_0.75_224_no_top](https://drive.google.com/file/d/1eNQ4c1c-sRHs8gjw_T1X9f4HgW783YQW/view?usp=sharing)
+- [Mobilenet_0.75_224_no_top](https://drive.google.com/file/d/1eNQ4c1c-sRHs8gjw_T1X9f4HgW783YQW/view?usp=sharing)
+- [Super point weight](https://github.com/magicleap/SuperPointPretrainedNetwork/blob/master/superpoint_v1.pth)
