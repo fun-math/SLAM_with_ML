@@ -29,8 +29,10 @@ class Dataset(tf.keras.utils.Sequence) :
 	def _imread(self,path) :
 		
 		#print(path)
-		img=cv2.imread(path, 0)
-		img = cv2.resize(img, (640, 480))
+		img=cv2.imread(path)
+		img = cv2.resize(img, (640, 480), interpolation=cv2.INTER_AREA)
+		img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        img = img.astype('float')/255.0
 		img = np.expand_dims(img, axis = -1) 
 		img = np.repeat(img, 3, axis = -1).astype(np.float32)
 		#print(img.shape)
@@ -48,7 +50,7 @@ class Dataset(tf.keras.utils.Sequence) :
 
 		x1=tf.random.normal(shape=(1,4096))
 		batch_y = [x1,batch_y[0], batch_y[1]]
-		# print(batch_y[1].shape)
+		print(batch_y[2].shape)
 		
 		for i in range(3) :
 			if batch_y[i].shape[1]==1 :
