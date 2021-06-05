@@ -3,6 +3,7 @@ import tensorflow as tf
 import tensorflow.keras.layers as nn
 import numpy as np
 import cv2
+from time import time as t
 
 from netVLADlayer import netVLADlayer
 from detector import Detector
@@ -11,7 +12,7 @@ from Loss import *
 from MobileNetv2 import *
 
 class HFnet(tf.keras.Model) :
-    def __init__(self, in_shape=(480,640,3),alpha=0.75,mid=5,weights_dir=None) :
+    def __init__(self, in_shape=(480,640,3),alpha=0.75,mid=5,weights_dir='../weights/') :
         super(HFnet,self).__init__()
 
         self.in_shape=in_shape
@@ -43,7 +44,8 @@ class HFnet(tf.keras.Model) :
     def call(self,x,training=None) :
         x=self.base(x)
  
-        global_descriptor=self.netvladlayer(self.netvlad_encoder(x))
+        global_descriptor=self.netvlad_encoder(x)
+        global_descriptor=self.netvladlayer(global_descriptor)
         
         local_descriptor=self.descriptor_head(x)
         key_points=self.detector_head(x)
@@ -67,11 +69,14 @@ class HFnet(tf.keras.Model) :
     def calculate_loss(self,y,y_pred) :
         return sum([self._losses[i](y[i],y_pred[i]) for i in range(3)])
 
+    @tf.function
     def train_step(self, data):
         x, y = data
 
         with tf.GradientTape() as tape:
             y_pred = self(x, training = True)
+            #print(y[0].shape, y[1].shape, y[2].shape) 
+            #print(y_pred[0].shape ,y_pred[1].shape , y_pred[2].shape )
             train_loss = self.calculate_loss(y, y_pred)
 
         gradients = tape.gradient(train_loss, self.trainable_variables)
@@ -83,20 +88,14 @@ class HFnet(tf.keras.Model) :
         #         y_batch_val_pred = self(x_batch_val, training = False)
         #         val_loss =self.compiled_loss(y_val, y_val_pred)
         # print(val_loss)
-
-        if self.step == 60000:
-            optimizer.learning_rate.assign(0.0001)
-        if self.step==80000:
-            optimizer.learning_rate.assign(0.00001)
-        self.step = self.step + 1
-        # print(train_loss.numpy())
         return train_loss
         # tf.print(train_loss)
         # print(self.metrics[0].result())
         # for m in self.metrics :
         #     tf.print(m.result()) 
         # return {m.name: m.result() for m in self.metrics}
-        
+    
+    @tf.function    
     def test_step(self,data) : 
         x, y = data
         y_pred=self(x)
@@ -104,24 +103,56 @@ class HFnet(tf.keras.Model) :
         loss = self.calculate_loss(y, y_pred)
         return loss
 
-    def custom_fit(self,steps = 85000,valid_freq=100) :
+    def custom_fit(self,steps = 85000,valid_freq=100, step_init=0) :
         epochs=np.ceil(steps/self.train_ds.__len__())
         self.valid_freq=valid_freq
-        self.step=0
+        self.step=step_init
+        m = tf.keras.metrics.Mean()
+        val = tf.keras.metrics.Mean()
+        val_losses = []
 
         for epoch in range(int(epochs)) :
-            mean_loss = 0
             for x_batch_train, y_batch_train in self.train_ds :
+                tic=t()
                 loss=self.train_step((x_batch_train, y_batch_train))
-                loss_numpy = loss.data.cpu().numpy()
-                print('step = ',self.step,', loss = ',loss_numpy)
+                toc=t()
+                m.update_state(loss)
 
-                if self.step % self.valid_freq == 0 :
+                if (self.step%1000==0 and self.step>0):
+                    f = open('/media/ironwolf/students/amit/SLAM_with_ML/src/steps.txt', 'w')
+                    f.write(str(self.step))
+                    print('checkpoint saved: ', self.step)
+                    self.save_weights(self.weights_dir + 'hfnet_new.h5')
+
+                if self.step == 60000:
+                    optimizer.learning_rate.assign(0.0001)
+                if self.step==80000:
+                    optimizer.learning_rate.assign(0.00001)
+                self.step = self.step + 1
+                #loss_numpy = loss.to('cpu').detach().numpy()
+                print('step = ',self.step,', loss = ',loss.numpy(), toc-tic)
+                
+              
+
+                if (self.step % self.valid_freq == 0 and self.step>=65000):
                     for x_batch_val, y_batch_val in self.valid_ds :
+                        
                         val_loss  = self.test_step((x_batch_val, y_batch_val))
-                        val_loss_numpy = val_loss.data.cpu().numpy()
-                    print('**********Validation*********\nloss = ',val_loss_numpy,
-                        '\n*****************************')
+                        val.update_state(val_loss)
+                       
+                                                
+                        #val_loss_numpy = val_loss.to('cpu').detach().numpy()
+                    print('**********Validation*********     loss = ',val.result().numpy(), '      *****************************')
+                    val_losses.append(val.result().numpy())
+                    val.reset_states()
+
+                
+               
+                        
+            print('train loss per epoch: ', m.result().numpy())
+            
+            m.reset_states()
+
                     #for m in self.metrics :
                         #m.reset_states()
 

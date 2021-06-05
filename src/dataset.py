@@ -15,7 +15,7 @@ class Dataset(tf.keras.utils.Sequence) :
 		self.post_path=post_path
 		self.split=split
 		self.batch_size=batch_size
-		self.label_types=[ 'ldesc/','ldet/']
+		self.label_types=[ 'gdesc/', 'ldesc/','ldet/']
 		self.names=[full_name.split('/')[-1] 
 			for full_name in glob.glob(pre_path+'images/'+post_path+split+'*')]
 
@@ -32,7 +32,7 @@ class Dataset(tf.keras.utils.Sequence) :
 		img=cv2.imread(path)
 		img = cv2.resize(img, (640, 480), interpolation=cv2.INTER_AREA)
 		img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-        img = img.astype('float')/255.0
+		img = img.astype('float')/255.0
 		img = np.expand_dims(img, axis = -1) 
 		img = np.repeat(img, 3, axis = -1).astype(np.float32)
 		#print(img.shape)
@@ -48,9 +48,9 @@ class Dataset(tf.keras.utils.Sequence) :
 					for name in batch_names])
 						for label_type in self.label_types]
 
-		x1=tf.random.normal(shape=(1,4096))
-		batch_y = [x1,batch_y[0], batch_y[1]]
-		print(batch_y[2].shape)
+		# x1=tf.random.normal(shape=(1,4096))
+		# batch_y = [x1,batch_y[0], batch_y[1]]
+		#print(batch_y[2].shape)
 		
 		for i in range(3) :
 			if batch_y[i].shape[1]==1 :
