@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 
 class netVLADlayer(tf.keras.layers.Layer) :
-	def __init__(self,num_clusters=64,dim=512,weight_init='glorot_uniform',cluster_initializer=None,postnorm=True) :
+	def __init__(self,num_clusters=16,dim=128,weight_init='glorot_uniform',cluster_initializer=None,postnorm=True) :
 		super(netVLADlayer,self).__init__()
 		self.postnorm=postnorm
 

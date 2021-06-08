@@ -1,5 +1,5 @@
 import tensorflow as tf
-
+#from tensorflow import keras
 import tensorflow.keras.layers as nn
 import numpy as np
 import cv2
@@ -18,12 +18,19 @@ class HFnet(tf.keras.Model) :
         self.in_shape=in_shape
         self.alpha=alpha
         self.block_size=8
+        # print('********************* before mobilenet *****************')
+        # self.base=tf.keras.applications.MobileNetV2(input_shape=in_shape,include_top=False,
+                # weights='imagenet')
+
         self.base=MobileNetV2(input_shape=in_shape,include_top=False,alpha=0.75,
                 weights='../weights/custom_mobilenet_v2_0.75_224_no_top.h5',
                 begin=True,start_block=0,finish_block=mid)
+        # print(type(self.base.get_weights()))
         self.netvlad_encoder=MobileNetV2(input_shape=in_shape,include_top=False,alpha=0.75,
                 weights='../weights/custom_mobilenet_v2_0.75_224_no_top.h5',
                 end=True,start_block=mid+1,finish_block=16)
+        # print("netvlad layer")
+        # print(self.netvlad_encoder.get_weights())
 
         self.detector_head=Detector() #detector head
         self.descriptor_head=Descriptor() #descriptor head
@@ -43,7 +50,7 @@ class HFnet(tf.keras.Model) :
 
     def call(self,x,training=None) :
         x=self.base(x)
- 
+
         global_descriptor=self.netvlad_encoder(x)
         global_descriptor=self.netvladlayer(global_descriptor)
         
@@ -75,19 +82,12 @@ class HFnet(tf.keras.Model) :
 
         with tf.GradientTape() as tape:
             y_pred = self(x, training = True)
-            #print(y[0].shape, y[1].shape, y[2].shape) 
-            #print(y_pred[0].shape ,y_pred[1].shape , y_pred[2].shape )
             train_loss = self.calculate_loss(y, y_pred)
 
         gradients = tape.gradient(train_loss, self.trainable_variables)
     
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
-        # self.compiled_metrics.update_state(y, y_pred)
-        # if self.step%100==0:
-        #     for x_batch_val, y_batch_val in val_dataset:
-        #         y_batch_val_pred = self(x_batch_val, training = False)
-        #         val_loss =self.compiled_loss(y_val, y_val_pred)
-        # print(val_loss)
+        
         return train_loss
         # tf.print(train_loss)
         # print(self.metrics[0].result())
@@ -114,6 +114,7 @@ class HFnet(tf.keras.Model) :
         for epoch in range(int(epochs)) :
             for x_batch_train, y_batch_train in self.train_ds :
                 tic=t()
+                # print(type(x_batch_train[0]),type(y_batch_train[0]))
                 loss=self.train_step((x_batch_train, y_batch_train))
                 toc=t()
                 m.update_state(loss)
@@ -124,22 +125,27 @@ class HFnet(tf.keras.Model) :
                     print('checkpoint saved: ', self.step)
                     self.save_weights(self.weights_dir + 'hfnet_new.h5')
 
+
                 if self.step == 60000:
-                    optimizer.learning_rate.assign(0.0001)
+                    self.optimizer.learning_rate.assign(0.0001)
                 if self.step==80000:
-                    optimizer.learning_rate.assign(0.00001)
+                    self.optimizer.learning_rate.assign(0.00001)
                 self.step = self.step + 1
                 #loss_numpy = loss.to('cpu').detach().numpy()
                 print('step = ',self.step,', loss = ',loss.numpy(), toc-tic)
-                
+                # if self.step>=10 :
+                #     break
               
-
+                i=0
                 if (self.step % self.valid_freq == 0 and self.step>=65000):
                     for x_batch_val, y_batch_val in self.valid_ds :
                         
                         val_loss  = self.test_step((x_batch_val, y_batch_val))
                         val.update_state(val_loss)
-                       
+                        # i+=1
+                        # print(i)
+                        # if i>3 :
+                        #     break
                                                 
                         #val_loss_numpy = val_loss.to('cpu').detach().numpy()
                     print('**********Validation*********     loss = ',val.result().numpy(), '      *****************************')
