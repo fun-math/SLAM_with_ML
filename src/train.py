@@ -19,8 +19,8 @@ if True :
             n = int(line)
     print('********************', n)
     
-    train_ds=Dataset(batch_size=16)
-    valid_ds=Dataset(split='val/',batch_size=16)
+    train_ds=Dataset(batch_size=16).tf_data()
+    valid_ds=Dataset(split='val/',batch_size=16).tf_data()
 
 #instantiate the model and run model.fit
     model=HFnet(in_shape=(480,640,3))
@@ -29,7 +29,7 @@ if True :
     # import pdb; pdb.set_trace()
     model.build(input_shape=(None, 480, 640, 3))
     model.assign_data(train_ds=train_ds,valid_ds=valid_ds)
-    model.load_weights('/media/ironwolf/students/amit/SLAM_with_ML/weights/hfnet_new.h5')
+    # model.load_weights('/media/ironwolf/students/amit/SLAM_with_ML/weights/hfnet_new.h5')
     
 # model.compile(optimizer = "RMSprop", 
         # loss = [Loss_desc('gdesc'),Loss_desc('ldesc'),Loss_ldet()])
@@ -48,4 +48,4 @@ if True :
     # a = model(img)
     # print(a.shape)
 
-    model.custom_fit(valid_freq=1000,step_init = n)
+    model.custom_fit(valid_freq=1000,step_init = 0)

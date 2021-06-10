@@ -9,7 +9,7 @@ import glob
 
 class Dataset(tf.keras.utils.Sequence) :
 	def __init__(self,pre_path="/media/ironwolf/students/amit/datasets/bdd100k/",
-		post_path='100k/',split='train/',batch_size=64,cores=16) :
+		post_path='100k/',split='train/',batch_size=64,cores=8) :
 		
 		self.pre_path=pre_path
 		self.post_path=post_path
@@ -72,12 +72,14 @@ class Dataset(tf.keras.utils.Sequence) :
 	def parse_function(self,name) :
 		image = tf.io.read_file('{}images/{}{}{}'.format(self.pre_path,self.post_path,self.split,name))
 		image = tf.image.decode_jpeg(image, channels=3)
+		image = tf.image.resize(image, [480, 640])
 		image = tf.image.convert_image_dtype(image, tf.float32)/255.0
 
-		y1,y2,y3=[np.load(tf.strings.regex_replace(
-			'{}labels/{}{}{}{}'.format(self.pre_path,self.post_path,label_type,self.split,name),
-			 "jpg", "npy")).astype(np.float32) for label_type in self.label_types]
+		y1,y2,y3=[np.load('{}labels/{}{}{}{}'.format(
+			self.pre_path,self.post_path,label_type,self.split,name[:-3] + 'npy')
+		)[0].astype(np.float32) for label_type in self.label_types]
 
+		y2,y3 = [np.moveaxis(y, 0,2) for y in [y2,y3]]
 		return image,y1,y2,y3
 
 	def tf_data(self) :
@@ -86,7 +88,7 @@ class Dataset(tf.keras.utils.Sequence) :
 			).map(lambda name : tf.numpy_function(self.parse_function,[name],
 				4*[tf.float32]),num_parallel_calls=self.cores
 			).batch(self.batch_size
-			).prefetch(tf.data.AUTOTUNE)
+			).prefetch(4)
 		'''
 		data=tf.data.Dataset.from_generator(
 			lambda : (s for s in self),
@@ -106,4 +108,6 @@ if __name__=='__main__' :
 	print(data.__len__())
 	data.__getitem__(0)
 	data=data.tf_data()
+	for x,y1,y2,y3 in data :
+		print(x.shape,y1.shape,y2.shape,y3.shape)
 	#To be tested after generating labels successfully

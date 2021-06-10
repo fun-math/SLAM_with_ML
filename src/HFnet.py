@@ -78,11 +78,11 @@ class HFnet(tf.keras.Model) :
 
     @tf.function
     def train_step(self, data):
-        x, y = data
+        x, y1,y2,y3 = data
 
         with tf.GradientTape() as tape:
             y_pred = self(x, training = True)
-            train_loss = self.calculate_loss(y, y_pred)
+            train_loss = self.calculate_loss([y1,y2,y3], y_pred)
 
         gradients = tape.gradient(train_loss, self.trainable_variables)
     
@@ -97,25 +97,25 @@ class HFnet(tf.keras.Model) :
     
     @tf.function    
     def test_step(self,data) : 
-        x, y = data
+        x, y1,y2,y3 = data
         y_pred=self(x)
         #self.compiled_metrics.update_state(y,y_pred)
-        loss = self.calculate_loss(y, y_pred)
+        loss = self.calculate_loss([y1,y2,y3], y_pred)
         return loss
 
     def custom_fit(self,steps = 85000,valid_freq=100, step_init=0) :
-        epochs=np.ceil(steps/self.train_ds.__len__())
+        epochs=np.ceil(steps*16/70000)
         self.valid_freq=valid_freq
         self.step=step_init
         m = tf.keras.metrics.Mean()
         val = tf.keras.metrics.Mean()
         val_losses = []
-
+        mem=t()
         for epoch in range(int(epochs)) :
-            for x_batch_train, y_batch_train in self.train_ds :
+            for train_batch in self.train_ds :
                 tic=t()
                 # print(type(x_batch_train[0]),type(y_batch_train[0]))
-                loss=self.train_step((x_batch_train, y_batch_train))
+                loss=self.train_step(train_batch)
                 toc=t()
                 m.update_state(loss)
 
@@ -132,15 +132,16 @@ class HFnet(tf.keras.Model) :
                     self.optimizer.learning_rate.assign(0.00001)
                 self.step = self.step + 1
                 #loss_numpy = loss.to('cpu').detach().numpy()
-                print('step = ',self.step,', loss = ',loss.numpy(), toc-tic)
+                print('step = ',self.step,', loss = ',loss.numpy(), toc-tic,t()-mem)
+                mem=t()
                 # if self.step>=10 :
                 #     break
               
                 i=0
                 if (self.step % self.valid_freq == 0 and self.step>=65000):
-                    for x_batch_val, y_batch_val in self.valid_ds :
+                    for val_batch in self.valid_ds :
                         
-                        val_loss  = self.test_step((x_batch_val, y_batch_val))
+                        val_loss  = self.test_step(val_batch)
                         val.update_state(val_loss)
                         # i+=1
                         # print(i)
