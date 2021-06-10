@@ -9,12 +9,13 @@ import glob
 
 class Dataset(tf.keras.utils.Sequence) :
 	def __init__(self,pre_path="/media/ironwolf/students/amit/datasets/bdd100k/",
-		post_path='100k/',split='train/',batch_size=64) :
+		post_path='100k/',split='train/',batch_size=64,cores=16) :
 		
 		self.pre_path=pre_path
 		self.post_path=post_path
 		self.split=split
 		self.batch_size=batch_size
+		self.cores=cores
 		self.label_types=[ 'gdesc/', 'ldesc/','ldet/']
 		self.names=[full_name.split('/')[-1] 
 			for full_name in glob.glob(pre_path+'images/'+post_path+split+'*')]
@@ -40,40 +41,69 @@ class Dataset(tf.keras.utils.Sequence) :
 		return img
 
 	def __getitem__(self,idx) :
-		batch_names=self.names[idx*self.batch_size : (idx+1)*self.batch_size]
+		# batch_names=self.names[idx*self.batch_size : (idx+1)*self.batch_size]
 
-		batch_x=np.array([self._imread('{}images/{}{}{}'.format(self.pre_path,self.post_path,self.split,name))
-				for name in batch_names])
-		batch_y=[np.array([np.load('{}labels/{}{}{}{}'.format(self.pre_path,self.post_path,label_type,self.split,name[:-3] + 'npy'))
-					for name in batch_names])
-						for label_type in self.label_types]
+		# batch_x=np.array([self._imread('{}images/{}{}{}'.format(self.pre_path,self.post_path,self.split,name))
+		# 		for name in batch_names])
+		# batch_y=[np.array([np.load('{}labels/{}{}{}{}'.format(self.pre_path,self.post_path,label_type,self.split,name[:-3] + 'npy'))
+		# 			for name in batch_names])
+		# 				for label_type in self.label_types]
 
-		# x1=tf.random.normal(shape=(1,4096))
-		# batch_y = [x1,batch_y[0], batch_y[1]]
-		#print(batch_y[2].shape)
 		
-		for i in range(3) :
-			if batch_y[i].shape[1]==1 :
-				batch_y[i]=np.squeeze(batch_y[i],axis=1)
+		# for i in range(3) :
+		# 	if batch_y[i].shape[1]==1 :
+		# 		batch_y[i]=np.squeeze(batch_y[i],axis=1)
 
-		channels=[256,65]#[desc,det]
-		for i in range(1,3) :
-			if batch_y[i].shape[1]==channels[i-1] :
-				batch_y[i]=np.moveaxis(batch_y[i], 1,3)
+		# channels=[256,65]#[desc,det]
+		# for i in range(1,3) :
+		# 	if batch_y[i].shape[1]==channels[i-1] :
+		# 		batch_y[i]=np.moveaxis(batch_y[i], 1,3)
 
 		# correct output
 		#return (batch_x,batch_y)
 		
 		#random values 
-		# x = tf.random.normal((1,160,160,3))
-		
-		#x2=tf.random.normal(shape=(1,10,10,256))
-		#x3=tf.random.normal(shape=(1,10, 10, 65))
-		return (batch_x, batch_y)
+		x = tf.random.normal((self.batch_size,160,160,3))
+		x1=tf.random.normal((self.batch_size,4096))
+		x2=tf.random.normal(shape=(self.batch_size,10,10,256))
+		x3=tf.random.normal(shape=(self.batch_size,10, 10, 65))
+		return (x1, [x1,x2,x3])
+
+	def parse_function(self,name) :
+		image = tf.io.read_file('{}images/{}{}{}'.format(self.pre_path,self.post_path,self.split,name))
+		image = tf.image.decode_jpeg(image, channels=3)
+		image = tf.image.convert_image_dtype(image, tf.float32)/255.0
+
+		y1,y2,y3=[np.load(tf.strings.regex_replace(
+			'{}labels/{}{}{}{}'.format(self.pre_path,self.post_path,label_type,self.split,name),
+			 "jpg", "npy")).astype(np.float32) for label_type in self.label_types]
+
+		return image,y1,y2,y3
+
+	def tf_data(self) :
+		return tf.data.Dataset.from_tensor_slices(self.names
+			).shuffle(len(self.names)
+			).map(lambda name : tf.numpy_function(self.parse_function,[name],
+				4*[tf.float32]),num_parallel_calls=self.cores
+			).batch(self.batch_size
+			).prefetch(tf.data.AUTOTUNE)
+		'''
+		data=tf.data.Dataset.from_generator(
+			lambda : (s for s in self),
+			output_signature=(tf.TensorSpec((self.batch_size,160,160,3),tf.float32),
+				[tf.TensorSpec((self.batch_size,4096),tf.float32),
+				tf.TensorSpec((self.batch_size,10,10,256),tf.float32),
+				tf.TensorSpec((self.batch_size,10,10,65),tf.float32)],
+				))
+
+		return data
+		'''
+
 
 
 if __name__=='__main__' :
 	data=Dataset()
 	print(data.__len__())
 	data.__getitem__(0)
+	data=data.tf_data()
 	#To be tested after generating labels successfully
