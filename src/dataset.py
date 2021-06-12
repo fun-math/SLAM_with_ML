@@ -75,21 +75,27 @@ class Dataset(tf.keras.utils.Sequence) :
 		image = tf.io.read_file('{}images/{}{}{}'.format(self.pre_path,self.post_path,self.split,name))
 		image = tf.image.decode_jpeg(image, channels=3)
 		image = tf.image.resize(image, [480, 640])
+		# image=tf.reshape(image,[480,640,3])
+		image = tf.image.convert_image_dtype(image, tf.float32)/255.0
+
 
 		y1,y2,y3=[np.load('{}labels/{}{}{}{}'.format(
 			self.pre_path,self.post_path,label_type,self.split,name[:-3] + 'npy')
 		)[0].astype(np.float32) for label_type in self.label_types]
 
+		y2,y3 = [np.moveaxis(y, 1,3) for y in [y2,y3]]
+
 		return image,y1,y2,y3
 
+	@tf.function(input_signature=tuple(4*[tf.TensorArraySpec(4*[None],tf.float32)]))
 	def preprocess(self,image,y1,y2,y3) :
-		# print(image.shape)
-		# image = tf.image.convert_image_dtype(image, tf.float32)/255.0
-		# image = tf.image.resize(image, [480, 640])
-		image = tf.cast(image, tf.float32)/255.0
-
-		# y2,y3 = [np.moveaxis(y, 1,3) for y in [y2,y3]]
-		y2,y3 = [tf.transpose(y, [0,2,3,1]) for y in [y2,y3]]
+	# 	# print(image.shape)
+	# 	# image = tf.image.convert_image_dtype(image, tf.float32)/255.0
+	# 	# image = tf.image.resize(image, [480, 640])
+	# 	# image = tf.cast(image, tf.float32)/255.0
+	# 	# image=tf.reshape(image,[8,480,640,3])
+	# 	# y2,y3 = [np.moveaxis(y, 1,3) for y in [y2,y3]]
+	# 	y2,y3 = [tf.transpose(y, [0,2,3,1]) for y in [y2,y3]]
 
 		return image,y1,y2,y3
 
@@ -99,19 +105,8 @@ class Dataset(tf.keras.utils.Sequence) :
 			).map(lambda name : tf.numpy_function(self.parse_function,[name],
 				4*[tf.float32]),num_parallel_calls=AUTOTUNE
 			).batch(self.batch_size
-			).map(self.preprocess,num_parallel_calls=AUTOTUNE
+			# ).map(self.preprocess,num_parallel_calls=AUTOTUNE
 			).prefetch(AUTOTUNE)
-		'''
-		data=tf.data.Dataset.from_generator(
-			lambda : (s for s in self),
-			output_signature=(tf.TensorSpec((self.batch_size,160,160,3),tf.float32),
-				[tf.TensorSpec((self.batch_size,4096),tf.float32),
-				tf.TensorSpec((self.batch_size,10,10,256),tf.float32),
-				tf.TensorSpec((self.batch_size,10,10,65),tf.float32)],
-				))
-
-		return data
-		'''
 
 
 

@@ -12,7 +12,7 @@ from Loss import *
 from MobileNetv2 import *
 
 class HFnet(tf.keras.Model) :
-    def __init__(self, strategy=strategy, in_shape=(480,640,3),alpha=0.75,mid=5,weights_dir='../weights/') :
+    def __init__(self, strategy=None, in_shape=(480,640,3),alpha=0.75,mid=5,weights_dir='../weights/') :
         super(HFnet,self).__init__()
 
         self.in_shape=in_shape
@@ -111,7 +111,7 @@ class HFnet(tf.keras.Model) :
             per_replica_losses,axis=None)
 
     def custom_fit(self,steps = 85000,valid_freq=100, step_init=0) :
-        epochs=np.ceil(steps*16/70000)
+        epochs=np.ceil(float(steps)*16/70000)
         self.valid_freq=valid_freq
         self.step=step_init
         m = tf.keras.metrics.Mean()

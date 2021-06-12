@@ -13,7 +13,7 @@ for gpu in gpus:
 # tf.debugging.set_log_device_placement(True)
 
 
-strategy = tf.distribute.MirroredStrategy(devices=["/gpu:0", "/gpu:1"])
+strategy = tf.distribute.MirroredStrategy(devices=["/gpu:0"])#, "/gpu:1"])
 with strategy.scope():
 # if True :
     #instantiate the model and run model.fit
