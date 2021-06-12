@@ -7,9 +7,11 @@ import glob
 #/media/ironwolf/students/amit/datasets/bdd100k/labels/100k/<label_type>/train/
 # <label_type> is one of ['gdesc/','ldesc/','ldet/']
 
+AUTOTUNE=tf.data.experimental.AUTOTUNE
+
 class Dataset(tf.keras.utils.Sequence) :
 	def __init__(self,pre_path="/media/ironwolf/students/amit/datasets/bdd100k/",
-		post_path='100k/',split='train/',batch_size=64,cores=8) :
+		post_path='100k/',split='train/',batch_size=64,cores=20) :
 		
 		self.pre_path=pre_path
 		self.post_path=post_path
@@ -73,22 +75,32 @@ class Dataset(tf.keras.utils.Sequence) :
 		image = tf.io.read_file('{}images/{}{}{}'.format(self.pre_path,self.post_path,self.split,name))
 		image = tf.image.decode_jpeg(image, channels=3)
 		image = tf.image.resize(image, [480, 640])
-		image = tf.image.convert_image_dtype(image, tf.float32)/255.0
 
 		y1,y2,y3=[np.load('{}labels/{}{}{}{}'.format(
 			self.pre_path,self.post_path,label_type,self.split,name[:-3] + 'npy')
 		)[0].astype(np.float32) for label_type in self.label_types]
 
-		y2,y3 = [np.moveaxis(y, 0,2) for y in [y2,y3]]
+		return image,y1,y2,y3
+
+	def preprocess(self,image,y1,y2,y3) :
+		# print(image.shape)
+		# image = tf.image.convert_image_dtype(image, tf.float32)/255.0
+		# image = tf.image.resize(image, [480, 640])
+		image = tf.cast(image, tf.float32)/255.0
+
+		# y2,y3 = [np.moveaxis(y, 1,3) for y in [y2,y3]]
+		y2,y3 = [tf.transpose(y, [0,2,3,1]) for y in [y2,y3]]
+
 		return image,y1,y2,y3
 
 	def tf_data(self) :
 		return tf.data.Dataset.from_tensor_slices(self.names
 			).shuffle(len(self.names)
 			).map(lambda name : tf.numpy_function(self.parse_function,[name],
-				4*[tf.float32]),num_parallel_calls=self.cores
+				4*[tf.float32]),num_parallel_calls=AUTOTUNE
 			).batch(self.batch_size
-			).prefetch(4)
+			).map(self.preprocess,num_parallel_calls=AUTOTUNE
+			).prefetch(AUTOTUNE)
 		'''
 		data=tf.data.Dataset.from_generator(
 			lambda : (s for s in self),
