@@ -12,7 +12,7 @@ from Loss import *
 from MobileNetv2 import *
 
 class HFnet(tf.keras.Model) :
-    def __init__(self, strategy=strategy, in_shape=(480,640,3),alpha=0.75,mid=5,weights_dir='../weights/') :
+    def __init__(self, in_shape=(480,640,3),alpha=0.75,mid=5,weights_dir='../weights/') :
         super(HFnet,self).__init__()
 
         self.in_shape=in_shape
@@ -36,7 +36,7 @@ class HFnet(tf.keras.Model) :
         self.descriptor_head=Descriptor() #descriptor head
         self.netvladlayer=netVLADlayer(dim = 1280) #netvladlayer
         
-        self.strategy=strategy
+
         self.weights_dir=weights_dir
         self.step=0#None
         self.valid_freq=None
@@ -74,8 +74,7 @@ class HFnet(tf.keras.Model) :
         self._losses=_losses
 
     def calculate_loss(self,y,y_pred) :
-        return tf.nn.compute_average_loss(
-            sum([self._losses[i](y[i],y_pred[i]) for i in range(3)]))
+        return sum([self._losses[i](y[i],y_pred[i]) for i in range(3)])
 
     @tf.function
     def train_step(self, data):
@@ -90,25 +89,19 @@ class HFnet(tf.keras.Model) :
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
         
         return train_loss
+        # tf.print(train_loss)
+        # print(self.metrics[0].result())
+        # for m in self.metrics :
+        #     tf.print(m.result()) 
+        # return {m.name: m.result() for m in self.metrics}
     
     @tf.function    
     def test_step(self,data) : 
         x, y1,y2,y3 = data
         y_pred=self(x)
+        #self.compiled_metrics.update_state(y,y_pred)
         loss = self.calculate_loss([y1,y2,y3], y_pred)
         return loss
-
-    @tf.function
-    def distributed_train_step(dist_inputs):
-        per_replica_losses = mirrored_strategy.run(train_step, args=(dist_inputs,))
-        return mirrored_strategy.reduce(tf.distribute.ReduceOp.SUM, 
-            per_replica_losses,axis=None)
-
-    @tf.function
-    def distributed_test_step(dist_inputs):
-        per_replica_losses = mirrored_strategy.run(test_step, args=(dist_inputs,))
-        return mirrored_strategy.reduce(tf.distribute.ReduceOp.SUM, 
-            per_replica_losses,axis=None)
 
     def custom_fit(self,steps = 85000,valid_freq=100, step_init=0) :
         epochs=np.ceil(steps*16/70000)
@@ -122,7 +115,7 @@ class HFnet(tf.keras.Model) :
             for train_batch in self.train_ds :
                 tic=t()
                 # print(type(x_batch_train[0]),type(y_batch_train[0]))
-                loss=self.distributed_train_step(train_batch)
+                loss=self.train_step(train_batch)
                 toc=t()
                 m.update_state(loss)
 
@@ -148,7 +141,7 @@ class HFnet(tf.keras.Model) :
                 if (self.step % self.valid_freq == 0 and self.step>=65000):
                     for val_batch in self.valid_ds :
                         
-                        val_loss  = self.distributed_test_step(val_batch)
+                        val_loss  = self.test_step(val_batch)
                         val.update_state(val_loss)
                         # i+=1
                         # print(i)
