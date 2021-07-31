@@ -25,26 +25,13 @@ if True :
 #instantiate the model and run model.fit
     model=HFnet(in_shape=(480,640,3))
     
-
     # import pdb; pdb.set_trace()
     model.build(input_shape=(None, 480, 640, 3))
     model.assign_data(train_ds=train_ds,valid_ds=valid_ds)
     # model.load_weights('/media/ironwolf/students/amit/SLAM_with_ML/weights/hfnet_new.h5')
     
-# model.compile(optimizer = "RMSprop", 
-        # loss = [Loss_desc('gdesc'),Loss_desc('ldesc'),Loss_ldet()])
     model.assign_loss([Loss_desc('gdesc'),Loss_desc('ldesc'),Loss_ldet()])
-    # img = cv2.imread('/media/ironwolf/students/amit/datasets/bdd100k/images/100k/test/cabc30fc-e7726578.jpg')
-    # img = cv2.resize(img, (640, 480), interpolation=cv2.INTER_AREA)
-    # img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-    # img = img.astype('float')/255.0
-    # img = np.expand_dims(img, axis = -1) 
-    # img = np.repeat(img, 3, axis = -1).astype(np.float32)
-    # img = [img]
-
-
-
-
+    # img = train_ds._imread('/media/ironwolf/students/amit/datasets/bdd100k/images/100k/test/cabc30fc-e7726578.jpg')
     # a = model(img)
     # print(a.shape)
 

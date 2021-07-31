@@ -46,8 +46,6 @@ class HFnet(tf.keras.Model) :
         self.optimizer=tf.keras.optimizers.RMSprop()
 
 
-
-
     def call(self,x,training=None) :
         x=self.base(x)
 
@@ -108,7 +106,6 @@ class HFnet(tf.keras.Model) :
         self.valid_freq=valid_freq
         self.step=step_init
         m = tf.keras.metrics.Mean()
-        val = tf.keras.metrics.Mean()
         val_losses = []
         mem=t()
         for epoch in range(int(epochs)) :
@@ -136,34 +133,33 @@ class HFnet(tf.keras.Model) :
                 mem=t()
                 # if self.step>=10 :
                 #     break
-              
-                i=0
-                if (self.step % self.valid_freq == 0 and self.step>=65000):
-                    for val_batch in self.valid_ds :
-                        
-                        val_loss  = self.test_step(val_batch)
-                        val.update_state(val_loss)
-                        # i+=1
-                        # print(i)
-                        # if i>3 :
-                        #     break
-                                                
-                        #val_loss_numpy = val_loss.to('cpu').detach().numpy()
-                    print('**********Validation*********     loss = ',val.result().numpy(), '      *****************************')
-                    val_losses.append(val.result().numpy())
-                    val.reset_states()
 
-                
+                if (self.step % self.valid_freq == 0 and self.step>=65000):
+                    val_loss=self.custom_evalutate()
+                    print('**********Validation*********     loss = ',val_loss, '      *****************************')
+                    val_losses.append(val_loss)                
                
                         
             print('train loss per epoch: ', m.result().numpy())
             
             m.reset_states()
 
-                    #for m in self.metrics :
-                        #m.reset_states()
+    def custom_evalutate() :
+        val = tf.keras.metrics.Mean()
 
-                    # self.save_weights(self.weights_dir+'hfnet_last.h5')
+        # i=0
+        for val_batch in self.valid_ds :
+            val_loss  = self.test_step(val_batch)
+            val.update_state(val_loss)
+            # i+=1
+            # print(i)
+            # if i>3 :
+            #     break
+
+        val_loss=val.result.numpy()
+        val.reset_states()
+
+        return val_loss
 
 
     def build_graph(self) :
