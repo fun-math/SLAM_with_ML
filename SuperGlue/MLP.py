@@ -5,7 +5,9 @@ import numpy as np
 __all__=["MLP"]
 
 def MLP(channels, bn=True) :
-    
+    '''
+    channels 
+    '''
     model = tf.keras.Sequential([])
 
     for i in range(len(channels)) :
@@ -21,4 +23,5 @@ if __name__=='__main__':
     model=MLP(channels)
     model.build((None,1,10))
     model.summary()
+    print(model(tf.random.normal(shape=(1,1,10))).shape)
     
