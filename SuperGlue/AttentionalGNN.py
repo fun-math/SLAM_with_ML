@@ -1,4 +1,5 @@
 import tensorflow as tf
+from AttentionalPropagation import *
 
 class AttentionalGNN(tf.nn.Module):
   def __init__(self, feature_dim, layer_names):
@@ -6,7 +7,7 @@ class AttentionalGNN(tf.nn.Module):
     self.layers = concatenate([AttentionalPropagation(feature_dim, 4) for _ in range(len(layer_names))])
     self.names = layer_names
 
-  def forward(self, desc0, desc1):
+  def call(self, desc0, desc1):
     for layer, name in zip(self.layers, self.names):
       if name=='cross':
         src0, src1 = desc1, desc0
