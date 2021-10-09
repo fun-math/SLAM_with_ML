@@ -14,4 +14,9 @@ class MultiHeadAttention():
       x, _ = attention(query, key, value)
 
       return self.merge()
-
+    
+def attention(query, key, value):
+  dim = query.shape[1]
+  scores = tf.einsum('bdhn, bdhm->bdhn', query, key)/np.sqrt(dim)
+  prob = tf.nn.softmax(scores, axis=-1) 
+  return tf.einsum('bhnm, bdhm->bdhn', prob, value), prob
