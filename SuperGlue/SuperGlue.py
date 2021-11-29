@@ -6,9 +6,6 @@ from copy import deepcopy
 from KeypointEncoder import *
 from AttentionalGNN import *
 from sinkhorn import *
-#import normalize_keypoints
-#import attentional GNN
-#import sinkhorn
 
 class SuperGlue(tf.keras.Model):
     def __init__(self, config=None):
