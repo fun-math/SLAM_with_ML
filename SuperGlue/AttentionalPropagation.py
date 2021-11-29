@@ -8,9 +8,15 @@ class AttentionalPropagation(tf.keras.layers.Layer):
     super(AttentionalPropagation,self).__init__()
     self.attention = MultiHeadAttention(num_heads, feature_dim)
     self.mlp = MLP([feature_dim*2, feature_dim*2, feature_dim])
-    tf.zeros_like(self.mlp[-1].bias)
+    # tf.zeros_like(self.mlp[-1].bias) Set bias to zero
 
   def call(self, x, source):
     msg = self.attention(x, source, source)
-    return self.mlp(tf.concat([msg, x], dim=1))
+    return self.mlp(tf.concat([x,msg], axis=1))
     
+if __name__=='__main__':
+  layer=AttentionalPropagation(256,4)
+  x=tf.random.normal(shape=(2,256,4))
+  y=tf.random.normal(shape=(2,256,5))
+  print(layer(x,y).shape)
+

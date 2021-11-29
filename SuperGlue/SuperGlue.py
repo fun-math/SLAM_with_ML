@@ -4,6 +4,8 @@ import numpy as np
 from copy import deepcopy
 
 from KeypointEncoder import *
+from AttentionalGNN import *
+from sinkhorn import *
 #import normalize_keypoints
 #import attentional GNN
 #import sinkhorn

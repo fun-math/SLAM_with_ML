@@ -12,14 +12,15 @@ class KeypointEncoder(tf.keras.layers.Layer) :
 
     def call(self, kpts, scores):
         # inputs=tf.concat([tf.transpose(kpts,perm=[0,2,1]),scores],axis=1)
-        inputs=tf.concat([kpts,
-                        tf.keras.backend.expand_dims(scores,-1)],axis=-1)
+        inputs=tf.concat([tf.transpose(kpts,perm=[0,2,1]),
+                        tf.keras.backend.expand_dims(scores,1)],axis=1)
         return self.encoder(inputs)
 
 if __name__=='__main__':
-    model=KeypointEncoder(128,[32,32])
+    model=KeypointEncoder(256,[32,32])
     # model.build((None,10,3))
-    print(model(tf.random.normal(shape=(1,5,2)),
-                tf.random.normal(shape=(1,5))).shape)
+    print(model(tf.random.normal(shape=(2,5,2)),
+                tf.random.normal(shape=(2,5))).shape)
     # model.summary()
+    #checked
     
