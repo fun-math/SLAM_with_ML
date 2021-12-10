@@ -19,8 +19,7 @@ def MLP(channels, bn=True) :
 
     return model
 
-def normalize_keypoints(kpts, image_shape):
-    size=tf.constant([image_shape[1].numpy(),image_shape[0].numpy()], shape=(1,2), dtype=kpts.dtype)
+def normalize_keypoints(kpts, size):
     center = size / 2
     scaling = tf.math.reduce_max(size, axis=1, keepdims=True) * 0.7
     return (kpts - center[:, None, :]) / scaling[:, None, :]
@@ -34,5 +33,5 @@ if __name__=='__main__':
     x=tf.random.normal(shape=(2,5,2))
     # x=torch.rand(2,5,2)
     # xn=x.detach().numpy()
-    print(normalize_keypoints(xn,[320,240]))#-torch_normalize_keypoints(x,[320,240]).detach().numpy())
+    # print(normalize_keypoints(xn,[320,240]))#-torch_normalize_keypoints(x,[320,240]).detach().numpy())
     
